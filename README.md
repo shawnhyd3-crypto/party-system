@@ -10,7 +10,7 @@ Built on RuneLite's own party service, so you join a party the normal way (Party
 - **Right-click a row in the overlay:**
   - `Hop-to <name> (W###)` quick-hops to their world (only shown when they're on a different world).
   - `Shortest-path <name>` hands their tile to the Shortest Path plugin.
-- **World map icons** in each member's colour. Bright with a white ring when they're on your world, faded when they're not. Icons snap to the map edge when off-screen.
+- **World map icons** in each member's party colour (the same colour the core Party plugin gives them). Bright with a white ring when they're on your world, faded when they're not. Icons snap to the map edge when off-screen. The core Party plugin also draws each member's avatar on the map; this icon sits on the same tile and adds the world status and menu options.
   - Right-click an icon on your world: `Shortest-path`.
   - Right-click an icon on another world: `Hop-to`.
   - Left-click: focus the map on them (RuneLite's standard behaviour).
@@ -37,6 +37,7 @@ Built on RuneLite's own party service, so you join a party the normal way (Party
 - Members with no update for 90 seconds are shown as `(stale)` and dropped from the map.
 - Hop-to uses the same open-switcher-then-hop pattern as RuneLite's World Hopper plugin.
 - Shortest-path posts a `PluginMessage("shortestpath", "path", {target: WorldPoint})`, the Shortest Path plugin's public cross-plugin API.
+- Member colours come from the core Party plugin (`PartyPluginService`), with a generated fallback until one is assigned.
 - Location labels come from a nearest-landmark table (`LocationNames.java`). They're approximate hints, not exact area names. Add landmarks there to improve coverage.
 
 ## Development

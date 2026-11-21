@@ -17,21 +17,26 @@ class PartyMapPoint extends WorldMapPoint
 
 	@Getter
 	private final long memberId;
-	private final BufferedImage sameWorldImage;
-	private final BufferedImage otherWorldImage;
+	private Color color;
+	private BufferedImage sameWorldImage;
+	private BufferedImage otherWorldImage;
 
 	PartyMapPoint(MemberLocation m)
 	{
 		super(m.getPoint(), null);
 		this.memberId = m.getMemberId();
-		this.sameWorldImage = icon(m.color(), 1.0f, true);
-		this.otherWorldImage = icon(m.color(), 0.45f, false);
 		setSnapToEdge(true);
 		setJumpOnClick(true);
 	}
 
-	void update(MemberLocation m, boolean sameWorld)
+	void update(MemberLocation m, boolean sameWorld, Color memberColor)
 	{
+		if (!memberColor.equals(color))
+		{
+			color = memberColor;
+			sameWorldImage = icon(memberColor, 1.0f, true);
+			otherWorldImage = icon(memberColor, 0.45f, false);
+		}
 		setWorldPoint(m.getPoint());
 		setImage(sameWorld ? sameWorldImage : otherWorldImage);
 		setName(m.getName());

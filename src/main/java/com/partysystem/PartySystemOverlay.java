@@ -121,7 +121,7 @@ class PartySystemOverlay extends Overlay
 			boolean online = m.isOnline() && !m.isStale();
 			Color worldColor = !online ? OFFLINE : (m.getWorld() == myWorld ? SAME_WORLD : OTHER_WORLD);
 
-			g.setColor(online ? m.color() : OFFLINE);
+			g.setColor(online ? plugin.colorFor(m.getMemberId()) : OFFLINE);
 			g.fillOval(PADDING, textY - DOT, DOT, DOT);
 
 			int textX = PADDING + DOT + 4;

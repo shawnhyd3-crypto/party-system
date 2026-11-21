@@ -48,6 +48,8 @@ import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.party.PartyPlugin;
+import net.runelite.client.plugins.party.PartyPluginService;
+import net.runelite.client.plugins.party.data.PartyMemberData;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
@@ -122,6 +124,9 @@ public class PartySystemPlugin extends Plugin
 	@Inject
 	private PluginManager pluginManager;
 
+	@Inject
+	private PartyPluginService partyPluginService;
+
 	/** Remote members only, keyed by party member id. Written from the websocket thread. */
 	private final Map<Long, MemberLocation> members = new ConcurrentHashMap<>();
 	/** Client thread only. */
@@ -170,6 +175,17 @@ public class PartySystemPlugin extends Plugin
 	boolean isInParty()
 	{
 		return partyService.isInParty();
+	}
+
+	/** The member's colour from the core Party plugin, so we match the Party panel and its map icons. */
+	Color colorFor(long memberId)
+	{
+		PartyMemberData data = partyPluginService.getPartyData(memberId);
+		if (data != null && data.getColor() != null)
+		{
+			return data.getColor();
+		}
+		return MemberLocation.colorFor(memberId);
 	}
 
 	int getPartySize()
@@ -337,13 +353,13 @@ public class PartySystemPlugin extends Plugin
 			if (point == null)
 			{
 				point = new PartyMapPoint(m);
-				point.update(m, m.getWorld() == myWorld);
+				point.update(m, m.getWorld() == myWorld, colorFor(m.getMemberId()));
 				mapPoints.put(m.getMemberId(), point);
 				worldMapPointManager.add(point);
 			}
 			else
 			{
-				point.update(m, m.getWorld() == myWorld);
+				point.update(m, m.getWorld() == myWorld, colorFor(m.getMemberId()));
 			}
 		}
 
@@ -465,9 +481,9 @@ public class PartySystemPlugin extends Plugin
 			.onClick(e -> pathTo(m.getMemberId()));
 	}
 
-	private static String target(MemberLocation m)
+	private String target(MemberLocation m)
 	{
-		return ColorUtil.wrapWithColorTag(m.getName(), m.color());
+		return ColorUtil.wrapWithColorTag(m.getName(), colorFor(m.getMemberId()));
 	}
 
 	// ---------------------------------------------------------------- actions

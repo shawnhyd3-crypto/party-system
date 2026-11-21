@@ -27,11 +27,7 @@ class MemberLocation
 		return System.currentTimeMillis() - receivedAt > STALE_MILLIS;
 	}
 
-	Color color()
-	{
-		return colorFor(memberId);
-	}
-
+	/** Fallback colour when the Party plugin hasn't assigned one yet. */
 	static Color colorFor(long memberId)
 	{
 		double hue = (Long.hashCode(memberId) * 0.618033988749895) % 1.0;
