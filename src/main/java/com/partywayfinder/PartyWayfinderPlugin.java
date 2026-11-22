@@ -1,16 +1,14 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +34,6 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.PartyChanged;
 import net.runelite.client.events.PluginMessage;
-import net.runelite.client.game.WorldService;
 import net.runelite.client.party.PartyMember;
 import net.runelite.client.party.PartyService;
 import net.runelite.client.party.WSClient;
@@ -55,44 +52,25 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.Text;
-import net.runelite.client.util.WorldUtil;
-import net.runelite.http.api.worlds.World;
-import net.runelite.http.api.worlds.WorldResult;
-import net.runelite.http.api.worlds.WorldType;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Party System",
-	description = "See party members' world and location, hop to their world or path to them",
-	tags = {"party", "group", "world", "hop", "location", "map", "friends"}
+	name = "Party Wayfinder",
+	description = "See party members' world and location, and path to them with Shortest Path",
+	tags = {"party", "group", "world", "location", "map", "friends", "shortest path"}
 )
 @PluginDependency(PartyPlugin.class)
-public class PartySystemPlugin extends Plugin
+public class PartyWayfinderPlugin extends Plugin
 {
 	private static final String SHORTEST_PATH_NAMESPACE = "shortestpath";
 	private static final String SHORTEST_PATH_PLUGIN_NAME = "Shortest Path";
 	private static final int HEARTBEAT_TICKS = 50; // ~30s
-	private static final int HOP_MAX_ATTEMPTS = 5;
-
-	private static final Set<WorldType> RISKY_WORLD_TYPES = EnumSet.of(
-		WorldType.PVP,
-		WorldType.HIGH_RISK,
-		WorldType.DEADMAN,
-		WorldType.BETA_WORLD,
-		WorldType.NOSAVE_MODE,
-		WorldType.TOURNAMENT,
-		WorldType.FRESH_START_WORLD,
-		WorldType.SEASONAL,
-		WorldType.LAST_MAN_STANDING,
-		WorldType.PVP_ARENA,
-		WorldType.QUEST_SPEEDRUNNING
-	);
 
 	@Inject
 	private Client client;
 
 	@Inject
-	private PartySystemConfig config;
+	private PartyWayfinderConfig config;
 
 	@Inject
 	private PartyService partyService;
@@ -104,16 +82,13 @@ public class PartySystemPlugin extends Plugin
 	private OverlayManager overlayManager;
 
 	@Inject
-	private PartySystemOverlay overlay;
+	private PartyWayfinderOverlay overlay;
 
 	@Inject
 	private WorldMapPointManager worldMapPointManager;
 
 	@Inject
 	private WorldMapOverlay worldMapOverlay;
-
-	@Inject
-	private WorldService worldService;
 
 	@Inject
 	private ChatMessageManager chatMessageManager;
@@ -137,19 +112,16 @@ public class PartySystemPlugin extends Plugin
 	private int lastSentWorld = -1;
 	private WorldPoint lastSentPoint;
 
-	private net.runelite.api.World quickHopTarget;
-	private int hopAttempts;
-
 	@Provides
-	PartySystemConfig provideConfig(ConfigManager configManager)
+	PartyWayfinderConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(PartySystemConfig.class);
+		return configManager.getConfig(PartyWayfinderConfig.class);
 	}
 
 	@Override
 	protected void startUp()
 	{
-		wsClient.registerMessage(PartySystemLocationUpdate.class);
+		wsClient.registerMessage(PartyWayfinderLocationUpdate.class);
 		overlayManager.add(overlay);
 		forceSend = true;
 	}
@@ -161,11 +133,10 @@ public class PartySystemPlugin extends Plugin
 		{
 			sendOffline();
 		}
-		wsClient.unregisterMessage(PartySystemLocationUpdate.class);
+		wsClient.unregisterMessage(PartyWayfinderLocationUpdate.class);
 		overlayManager.remove(overlay);
 		clearMapPoints();
 		members.clear();
-		quickHopTarget = null;
 		lastSentWorld = -1;
 		lastSentPoint = null;
 	}
@@ -228,7 +199,7 @@ public class PartySystemPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onPartySystemLocationUpdate(PartySystemLocationUpdate msg)
+	public void onPartyWayfinderLocationUpdate(PartyWayfinderLocationUpdate msg)
 	{
 		PartyMember local = partyService.getLocalMember();
 		if (local != null && local.getMemberId() == msg.getMemberId())
@@ -267,7 +238,7 @@ public class PartySystemPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (PartySystemConfig.GROUP.equals(event.getGroup()) && !config.showWorldMapIcons())
+		if (PartyWayfinderConfig.GROUP.equals(event.getGroup()) && !config.showWorldMapIcons())
 		{
 			clearMapPoints();
 		}
@@ -276,8 +247,6 @@ public class PartySystemPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick tick)
 	{
-		processQuickHop();
-
 		if (!partyService.isInParty())
 		{
 			if (!mapPoints.isEmpty())
@@ -316,14 +285,14 @@ public class PartySystemPlugin extends Plugin
 		lastSentPoint = wp;
 
 		boolean instanced = client.getTopLevelWorldView().isInstance();
-		partyService.send(new PartySystemLocationUpdate(player.getName(), world, wp.getX(), wp.getY(), wp.getPlane(), instanced));
+		partyService.send(new PartyWayfinderLocationUpdate(player.getName(), world, wp.getX(), wp.getY(), wp.getPlane(), instanced));
 	}
 
 	private void sendOffline()
 	{
 		Player player = client.getLocalPlayer();
 		String name = player != null ? player.getName() : null;
-		partyService.send(new PartySystemLocationUpdate(name, 0, 0, 0, 0, false));
+		partyService.send(new PartyWayfinderLocationUpdate(name, 0, 0, 0, 0, false));
 		lastSentWorld = 0;
 		lastSentPoint = null;
 	}
@@ -440,10 +409,6 @@ public class PartySystemPlugin extends Plugin
 			if (m != null && m.isOnline())
 			{
 				addPathEntry(m);
-				if (m.getWorld() != client.getWorld())
-				{
-					addHopEntry(m);
-				}
 			}
 			return;
 		}
@@ -451,25 +416,13 @@ public class PartySystemPlugin extends Plugin
 		MemberLocation m = worldMapMemberAt(mouse);
 		if (m != null && m.isOnline())
 		{
-			// On the map: walkable only when you share a world; otherwise offer the hop
+			// On the map, offer the path only when you share a world. Hopping is left to
+			// the player (::hop <world>): hopping from in-game clicks can get accounts banned.
 			if (m.getWorld() == client.getWorld())
 			{
 				addPathEntry(m);
 			}
-			else
-			{
-				addHopEntry(m);
-			}
 		}
-	}
-
-	private void addHopEntry(MemberLocation m)
-	{
-		client.getMenu().createMenuEntry(-1)
-			.setOption("Hop-to")
-			.setTarget(target(m) + ColorUtil.wrapWithColorTag(" (W" + m.getWorld() + ")", Color.YELLOW))
-			.setType(MenuAction.RUNELITE)
-			.onClick(e -> hopTo(m.getMemberId()));
 	}
 
 	private void addPathEntry(MemberLocation m)
@@ -506,7 +459,7 @@ public class PartySystemPlugin extends Plugin
 		data.put("target", m.getPoint());
 		eventBus.post(new PluginMessage(SHORTEST_PATH_NAMESPACE, "path", data));
 
-		String note = m.getWorld() == client.getWorld() ? "" : " They're on world " + m.getWorld() + ", hop to meet them.";
+		String note = m.getWorld() == client.getWorld() ? "" : " They're on world " + m.getWorld() + ". Type ::hop " + m.getWorld() + " to join them.";
 		chat("Pathing to " + m.getName() + " (" + LocationNames.describe(m.getPoint(), m.isInstanced()) + ")." + note);
 	}
 
@@ -522,90 +475,11 @@ public class PartySystemPlugin extends Plugin
 		return false;
 	}
 
-	private void hopTo(long memberId)
-	{
-		MemberLocation m = members.get(memberId);
-		if (m == null || !m.isOnline())
-		{
-			chat("That party member is offline.");
-			return;
-		}
-		int target = m.getWorld();
-		if (target == client.getWorld())
-		{
-			chat("You're already on world " + target + ".");
-			return;
-		}
-
-		WorldResult worlds = worldService.getWorlds();
-		World world = worlds == null ? null : worlds.findWorld(target);
-		if (world == null)
-		{
-			chat("Couldn't find world " + target + " in the world list. Try again in a moment.");
-			return;
-		}
-
-		if (!config.allowRiskyHops())
-		{
-			for (WorldType t : world.getTypes())
-			{
-				if (RISKY_WORLD_TYPES.contains(t))
-				{
-					chat("World " + target + " is a " + t.name().toLowerCase().replace('_', ' ')
-						+ " world. Turn on 'Allow risky hops' in Party System settings to hop there.");
-					return;
-				}
-			}
-		}
-
-		net.runelite.api.World rsWorld = client.createWorld();
-		rsWorld.setActivity(world.getActivity());
-		rsWorld.setAddress(world.getAddress());
-		rsWorld.setId(world.getId());
-		rsWorld.setPlayerCount(world.getPlayers());
-		rsWorld.setLocation(world.getRegion().getId());
-		rsWorld.setTypes(WorldUtil.toWorldTypes(world.getTypes()));
-
-		if (client.getGameState() == GameState.LOGIN_SCREEN)
-		{
-			client.changeWorld(rsWorld);
-			return;
-		}
-
-		chat("Hopping to world " + target + " to join " + m.getName() + "...");
-		quickHopTarget = rsWorld;
-		hopAttempts = 0;
-	}
-
-	/** Same pattern as the core World Hopper: open the switcher, then hop next tick. */
-	private void processQuickHop()
-	{
-		if (quickHopTarget == null)
-		{
-			return;
-		}
-
-		if (client.getWidget(InterfaceID.Worldswitcher.BUTTONS) == null)
-		{
-			client.openWorldHopper();
-			if (++hopAttempts >= HOP_MAX_ATTEMPTS)
-			{
-				chat("Couldn't open the world switcher to hop. Try again out of combat.");
-				quickHopTarget = null;
-			}
-		}
-		else
-		{
-			client.hopToWorld(quickHopTarget);
-			quickHopTarget = null;
-		}
-	}
-
 	private void chat(String message)
 	{
 		String text = new ChatMessageBuilder()
 			.append(ChatColorType.HIGHLIGHT)
-			.append("[Party System] ")
+			.append("[Party Wayfinder] ")
 			.append(ChatColorType.NORMAL)
 			.append(message)
 			.build();

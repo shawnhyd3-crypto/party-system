@@ -1,4 +1,4 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import java.awt.Color;
 import lombok.Value;

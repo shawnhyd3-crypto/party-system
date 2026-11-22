@@ -1,4 +1,4 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -10,7 +10,7 @@ import net.runelite.client.party.messages.PartyMemberMessage;
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class PartySystemLocationUpdate extends PartyMemberMessage
+public class PartyWayfinderLocationUpdate extends PartyMemberMessage
 {
 	String name;
 	int world;

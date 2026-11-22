@@ -1,19 +1,27 @@
-# Party System
+# Party Wayfinder
 
-A RuneLite plugin that shows your party members' world and location, puts them on the world map, and gives you one-click **Hop-to** and **Shortest-path** shortcuts.
+A RuneLite plugin that shows your party members' world and location, puts them on the world map, and gives you a one-click **Shortest-path** to them.
 
-Built on RuneLite's own party service, so you join a party the normal way (Party panel, shared passphrase). Every member who wants to be seen needs this plugin enabled.
+Built on RuneLite's own party service, so you join a party the normal way (Party panel, shared passphrase). Every member who wants to be seen needs this plugin enabled. It adds to the core Party plugin rather than replacing it.
 
 ## Features
 
 - **Overlay** listing each party member: name, world (green = your world, yellow = another world, grey = offline) and a location label such as `Varrock`, `near Falador`, `Under Edgeville`, `Wilderness lvl 12` or `Instance (Barrows)`. Optional tile coordinates.
-- **Right-click a row in the overlay:**
-  - `Hop-to <name> (W###)` quick-hops to their world (only shown when they're on a different world).
-  - `Shortest-path <name>` hands their tile to the Shortest Path plugin.
-- **World map icons** in each member's party colour (the same colour the core Party plugin gives them). Bright with a white ring when they're on your world, faded when they're not. Icons snap to the map edge when off-screen. The core Party plugin also draws each member's avatar on the map; this icon sits on the same tile and adds the world status and menu options.
+- **Right-click a row in the overlay:** `Shortest-path <name>` hands their tile to the Shortest Path plugin.
+- **World map icons** in each member's party colour (the same colour the core Party plugin gives them). Bright with a white ring when they're on your world, faded when they're not. Icons snap to the map edge when off-screen. The core Party plugin also draws each member's avatar on the map; this icon sits on the same tile and adds the world status and menu option.
   - Right-click an icon on your world: `Shortest-path`.
-  - Right-click an icon on another world: `Hop-to`.
+  - Hover an icon on another world to see the world number.
   - Left-click: focus the map on them (RuneLite's standard behaviour).
+
+## Joining someone on another world
+
+The plugin doesn't hop for you. Hopping from in-game clicks can get accounts banned. The world number is always shown, so type RuneLite's built-in command in chat:
+
+```
+::hop 330
+```
+
+When you path to someone on another world, the chat message gives you the exact command.
 
 ## Requirements
 
@@ -28,14 +36,13 @@ Built on RuneLite's own party service, so you join a party the normal way (Party
 | Show coordinates | Off | Show `x, y, plane` under each member |
 | World map icons | On | Draw members on the world map |
 | Update interval (ticks) | 2 | Minimum ticks between location updates while moving (1-10) |
-| Allow risky hops | Off | Allow Hop-to onto PvP, high-risk, Deadman, beta, seasonal and similar worlds |
 
 ## How it works
 
-- Each client sends a small `PartySystemLocationUpdate` message (name, world, x, y, plane, instanced) over the RuneLite party websocket when its tile or world changes, rate-limited by the update interval, plus a heartbeat every ~30 seconds. Logging out sends world 0 so others see you as offline.
+- Each client sends a small `PartyWayfinderLocationUpdate` message (name, world, x, y, plane, instanced) over the RuneLite party websocket when its tile or world changes, rate-limited by the update interval, plus a heartbeat every ~30 seconds. Logging out sends world 0 so others see you as offline.
+- Locations are only shared with members of a party you joined. Nothing goes to a third-party server.
 - Instanced locations are converted back to real-world template coordinates before sending.
 - Members with no update for 90 seconds are shown as `(stale)` and dropped from the map.
-- Hop-to uses the same open-switcher-then-hop pattern as RuneLite's World Hopper plugin.
 - Shortest-path posts a `PluginMessage("shortestpath", "path", {target: WorldPoint})`, the Shortest Path plugin's public cross-plugin API.
 - Member colours come from the core Party plugin (`PartyPluginService`), with a generated fallback until one is assigned.
 - Location labels come from a nearest-landmark table (`LocationNames.java`). They're approximate hints, not exact area names. Add landmarks there to improve coverage.

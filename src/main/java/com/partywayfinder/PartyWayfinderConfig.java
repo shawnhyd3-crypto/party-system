@@ -1,14 +1,14 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.Range;
 
-@ConfigGroup(PartySystemConfig.GROUP)
-public interface PartySystemConfig extends Config
+@ConfigGroup(PartyWayfinderConfig.GROUP)
+public interface PartyWayfinderConfig extends Config
 {
-	String GROUP = "partysystem";
+	String GROUP = "partywayfinder";
 
 	@ConfigItem(
 		keyName = "showOverlay",
@@ -53,16 +53,5 @@ public interface PartySystemConfig extends Config
 	default int updateIntervalTicks()
 	{
 		return 2;
-	}
-
-	@ConfigItem(
-		keyName = "allowRiskyHops",
-		name = "Allow risky hops",
-		description = "Allow Hop-to on PvP, high-risk, Deadman, beta and other special worlds",
-		position = 5
-	)
-	default boolean allowRiskyHops()
-	{
-		return false;
 	}
 }

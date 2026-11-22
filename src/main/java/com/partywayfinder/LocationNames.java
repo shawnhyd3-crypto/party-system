@@ -1,4 +1,4 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import java.util.Arrays;
 import java.util.List;

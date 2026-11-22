@@ -1,4 +1,4 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import static org.junit.Assert.assertEquals;
 import net.runelite.api.coords.WorldPoint;

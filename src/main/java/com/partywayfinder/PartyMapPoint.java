@@ -1,4 +1,4 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -41,7 +41,7 @@ class PartyMapPoint extends WorldMapPoint
 		setImage(sameWorld ? sameWorldImage : otherWorldImage);
 		setName(m.getName());
 		setTooltip(m.getName() + " - W" + m.getWorld()
-			+ (sameWorld ? "" : " (right-click to hop)")
+			+ (sameWorld ? "" : " (::hop " + m.getWorld() + ")")
 			+ "\n" + LocationNames.describe(m.getPoint(), m.isInstanced()));
 	}
 

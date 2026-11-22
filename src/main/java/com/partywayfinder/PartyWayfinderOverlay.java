@@ -1,4 +1,4 @@
-package com.partysystem;
+package com.partywayfinder;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -19,9 +19,9 @@ import net.runelite.client.ui.overlay.components.ComponentConstants;
 
 /**
  * Party list overlay. Draws one row per member and remembers each row's bounds so the
- * plugin can attach Hop-to / Shortest-path menu entries to the row under the mouse.
+ * plugin can attach a Shortest-path menu entry to the row under the mouse.
  */
-class PartySystemOverlay extends Overlay
+class PartyWayfinderOverlay extends Overlay
 {
 	private static final int PADDING = 5;
 	private static final int ROW_GAP = 4;
@@ -47,13 +47,13 @@ class PartySystemOverlay extends Overlay
 	}
 
 	private final Client client;
-	private final PartySystemPlugin plugin;
-	private final PartySystemConfig config;
+	private final PartyWayfinderPlugin plugin;
+	private final PartyWayfinderConfig config;
 
 	private volatile List<Row> rows = Collections.emptyList();
 
 	@Inject
-	PartySystemOverlay(Client client, PartySystemPlugin plugin, PartySystemConfig config)
+	PartyWayfinderOverlay(Client client, PartyWayfinderPlugin plugin, PartyWayfinderConfig config)
 	{
 		this.client = client;
 		this.plugin = plugin;
